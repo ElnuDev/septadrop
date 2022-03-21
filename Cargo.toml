@@ -2,6 +2,7 @@
 name = "septadrop"
 version = "1.1.0"
 edition = "2021"
+build = "build.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -16,3 +17,6 @@ rand = "0.8.5"
 home = "0.5.3"
 gcd = "2.1.0"
 const_format = "0.2.22"
+
+[build-dependencies]
+winres = "0.1"
