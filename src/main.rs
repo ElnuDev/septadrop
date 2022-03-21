@@ -7,6 +7,7 @@ use sfml::graphics::*;
 use sfml::system::*;
 use sfml::window::*;
 use std::io::Write;
+use std::thread::current;
 
 mod structs;
 use structs::*;
@@ -31,14 +32,64 @@ fn get_update_interval(level: u32) -> u32 {
     ((0.8 - (level as i32 - 1) as f32 * 0.007).powi(level as i32 - 1) * 1000.0) as u32
 }
 
+fn handle_resize_events(code: Key, current_scale: &mut u32, render_window: &mut RenderWindow, scale_file_path: &std::path::PathBuf) {
+    let new_current_scale = match code {
+        Key::NUM0 | Key::NUM1 => 1,
+        Key::NUM2 => 2,
+        Key::NUM4 => 4,
+        Key::HYPHEN => match current_scale {
+            2 => 1,
+            4 => 2,
+            _ => 1
+        },
+        Key::EQUAL => match current_scale {
+            1 => 2,
+            2 => 4,
+            4 => 4,
+            _ => 1
+        },
+        _ => *current_scale
+    };
+    if *current_scale != new_current_scale {
+        render_window.set_size(Vector2u::new(WINDOW_WIDTH, WINDOW_HEIGHT) * new_current_scale);
+        let mut file = std::fs::OpenOptions::new()
+            .write(true)
+            .open(&scale_file_path)
+            .unwrap();
+        file.write_all(new_current_scale.to_string().as_bytes()).unwrap();
+        file.flush().unwrap();
+        *current_scale = new_current_scale;
+    }
+}
+
 fn main() {
     let context_settings = ContextSettings::default();
+    
+    let scale_file_path = home::home_dir().unwrap().join(".septadrop-scale");
+
+    let mut current_scale: u32;
+
+    if scale_file_path.exists() {
+        current_scale = std::fs::read_to_string(&scale_file_path)
+            .unwrap()
+            .trim()
+            .parse::<u32>()
+            .unwrap();
+    } else {
+        let mut scale_file = std::fs::File::create(&scale_file_path).unwrap();
+        write!(&mut scale_file, "1").unwrap();
+        current_scale = 1;
+    }
+
     let mut window = RenderWindow::new(
         VideoMode::new(WINDOW_WIDTH, WINDOW_HEIGHT, 16),
         "septadrop",
         Style::TITLEBAR | Style::CLOSE,
         &context_settings,
     );
+    if current_scale != 1 {
+        window.set_size(Vector2u::new(WINDOW_WIDTH, WINDOW_HEIGHT) * current_scale);
+    }
     window.set_framerate_limit(FPS);
     window.set_key_repeat_enabled(false);
 
@@ -159,14 +210,20 @@ fn main() {
         loop {
             match window.poll_event() {
                 Some(event) => match event {
-                    Event::Closed => {
-                        window.close();
-                        break;
-                    }
+                    Event::Closed => window.close(),
                     Event::LostFocus => {
                         toggle_pause = true;
                         paused_from_lost_focus = true;
                     }
+                    Event::KeyPressed {
+                        code,
+                        alt: _,
+                        ctrl: true,
+                        shift: _,
+                        system: _,
+                    } => {
+                        handle_resize_events(code, &mut current_scale, &mut window, &scale_file_path);
+                    },
                     Event::KeyPressed {
                         code,
                         alt: _,
@@ -237,6 +294,16 @@ fn main() {
             loop {
                 match window.wait_event() {
                     Some(event) => match event {
+                        Event::Closed => window.close(),
+                        Event::KeyPressed {
+                            code,
+                            alt: _,
+                            ctrl: true,
+                            shift: _,
+                            system: _,
+                        } => {
+                            handle_resize_events(code, &mut current_scale, &mut window, &scale_file_path);
+                        }
                         Event::KeyPressed {
                             code: Key::ESCAPE,
                             alt: _,
