@@ -2,6 +2,10 @@ septadrop (1.1.0) impish; urgency=low
 
   * Rewrite in Rust
   * Prevent block overlapping at top of screen; immediate game over
+  * Add multiple zoom levels
+  * Add Ctrl+Q exit shortcut
+
+ -- ElnuDev <elnu@elnu.com>  Mon, 21 Mar 2022 11:36:40 -0700
 
 septadrop (1.0.1) impish; urgency=low
 
