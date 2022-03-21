@@ -7,7 +7,6 @@ use sfml::graphics::*;
 use sfml::system::*;
 use sfml::window::*;
 use std::io::Write;
-use std::thread::current;
 
 mod structs;
 use structs::*;
@@ -210,7 +209,13 @@ fn main() {
         loop {
             match window.poll_event() {
                 Some(event) => match event {
-                    Event::Closed => window.close(),
+                    Event::Closed | Event::KeyPressed {
+                        code: Key::Q,
+                        alt: _,
+                        ctrl: true,
+                        shift: _,
+                        system: _,
+                    } => window.close(),
                     Event::LostFocus => {
                         toggle_pause = true;
                         paused_from_lost_focus = true;
@@ -294,7 +299,13 @@ fn main() {
             loop {
                 match window.wait_event() {
                     Some(event) => match event {
-                        Event::Closed => window.close(),
+                        Event::Closed | Event::KeyPressed {
+                            code: Key::Q,
+                            alt: _,
+                            ctrl: true,
+                            shift: _,
+                            system: _,
+                        } => window.close(),
                         Event::KeyPressed {
                             code,
                             alt: _,
