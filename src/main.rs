@@ -163,16 +163,9 @@ fn main() {
                         window.close();
                         break;
                     }
-                    Event::GainedFocus => {
-                        if paused && paused_from_lost_focus {
-                            toggle_pause = true;
-                        }
-                    }
                     Event::LostFocus => {
-                        if !paused {
-                            toggle_pause = true;
-                            paused_from_lost_focus = true;
-                        }
+                        toggle_pause = true;
+                        paused_from_lost_focus = true;
                     }
                     Event::KeyPressed {
                         code,
@@ -182,17 +175,17 @@ fn main() {
                         system: _,
                     } => match code {
                         Key::ESCAPE => toggle_pause = true,
-                        Key::SPACE => snap = !paused,
-                        Key::UP => rotate = !paused,
-                        Key::DOWN => fast_forward = !paused,
+                        Key::SPACE => snap = true,
+                        Key::UP => rotate = true,
+                        Key::DOWN => fast_forward = true,
                         Key::LEFT => {
-                            move_left = !paused;
-                            move_left_immediate = !paused;
+                            move_left = true;
+                            move_left_immediate = true;
                             move_clock.restart();
                         }
                         Key::RIGHT => {
-                            move_right = !paused;
-                            move_right_immediate = !paused;
+                            move_right = true;
+                            move_right_immediate = true;
                             move_clock.restart();
                         }
                         _ => {}
@@ -241,10 +234,29 @@ fn main() {
         }
 
         if paused {
-            // window.display() is where SFML implements frame rate limiting
-            // If we don't run this here, then when paused septadrop will max out the thread
-            window.display();
-            continue;
+            loop {
+                match window.wait_event() {
+                    Some(event) => match event {
+                        Event::KeyPressed {
+                            code: Key::ESCAPE,
+                            alt: _,
+                            ctrl: _,
+                            shift: _,
+                            system: _,
+                        } => {
+                            paused = false;
+                            break;
+                        },
+                        Event::GainedFocus => if paused_from_lost_focus {
+                            paused = false;
+                            paused_from_lost_focus = false;
+                            break;
+                        },
+                        _ => {}
+                    }
+                    _ => {}
+                }
+            }
         }
 
         let is_update_frame = update_clock.elapsed_time().as_milliseconds() - pause_offset as i32
